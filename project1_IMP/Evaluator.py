@@ -1,5 +1,10 @@
 import argparse
+import random
+import time
+import multiprocessing as mp
+
 import numpy as np
+from queue import Queue
 
 
 # read network file
@@ -19,40 +24,23 @@ def read_network(filename):
             p1 = float(line.split(" ")[2])
             p2 = float(line.split(" ")[3])
             graph[u].append((v, p1, p2))
-        return graph
+    return graph, n
 
 
-# read seed initial set file
-def read_initial(filename):
+# read seed set file
+def read_seeds(filename):
     with open(filename, 'r') as f:
-        I1 = []
-        I2 = []
+        s1 = set()
+        s2 = set()
         first_line = f.readline().strip("\n").split(" ")
         k1 = int(first_line[0])
         k2 = int(first_line[1])
         for i in range(k1):
             line = f.readline()
-            I1.append(int(line))
+            s1.add(int(line))
         for i in range(k2):
             line = f.readline()
-            I2.append(int(line))
-        return I1, I2
-
-
-# read balanced seed set file
-def read_balanced(filename):
-    with open(filename, 'r') as f:
-        s1 = []
-        s2 = []
-        first_line = f.readline().strip("\n").split(" ")
-        k1 = int(first_line[0])
-        k2 = int(first_line[1])
-        for i in range(k1):
-            line = f.readline()
-            s1.append(int(line))
-        for i in range(k2):
-            line = f.readline()
-            s2.append(int(line))
+            s2.add(int(line))
         return s1, s2
 
 
@@ -73,6 +61,52 @@ def get_evl_arguments():
     return parser.parse_args()
 
 
+# cam: campaign, 1 or 2, to get p1 or p2.
+def ic_process(graph, seeds, cam):  # independent cascade
+    q = Queue()
+    active = set()
+    for seed in seeds:
+        q.put(seed)
+        active.add(seed)
+    while not q.empty():  # graph[u] = [(v, p1, p2) ...]
+        u = q.get()
+        for nei in graph[u]:  # u's adjacent nodes
+            v = nei[0]
+            p = nei[cam]  # p1 or p2
+            if v not in active:
+                prob = random.random()
+                if p >= prob:  # activate v
+                    active.add(v)
+                    q.put(v)
+    return active
+
+
+def ic_2cam(graph, u1, u2, n):  # run ic for 2 campaigns
+    act1 = ic_process(graph, u1, 1)
+    act2 = ic_process(graph, u2, 2)
+    num = len(act1.union(act2)) - len(act1.intersection(act2))
+    return n - num
+
+
+def run(graph, u1, u2, n):
+    loop = 5000
+    cores = 4
+    pool = mp.Pool(processes=cores)
+    results = []
+    start = time.time()
+    for _ in range(loop):
+        res = pool.apply_async(ic_2cam, args=(graph, u1, u2, n))
+        results.append(res)
+
+    pool.close()
+    pool.join()
+    total_return_val = sum(res.get() for res in results)
+    ans = total_return_val / loop
+    end = time.time()
+    print("result: ", ans)
+    print("time: ", end - start)
+
+
 if __name__ == "__main__":
     args = get_evl_arguments()
     network = args.network
@@ -80,13 +114,13 @@ if __name__ == "__main__":
     balanced = args.balanced
     k = args.k
     out = args.out
-    graph = read_network(network)
-    i1, i2 = read_initial(initial)
-    s1, s2 = read_balanced(balanced)
-    print("initial 1: ", i1)
-    print("initial 2: ", i2)
-    print("balanced 1: ", s1)
-    print("balanced 2: ", s2)
-    for i in range(len(graph[0])):
-        print(graph[0][i])
+    graph, n = read_network(network)
+    i1, i2 = read_seeds(initial)
+    s1, s2 = read_seeds(balanced)
+    u1 = i1.union(s1)
+    u2 = i2.union(s2)
+    # for i in range(3):
+    run(graph, u1, u2, n)
 
+    # case1: 322
+    # case2: 35985
