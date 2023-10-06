@@ -2,10 +2,7 @@ import argparse
 import random
 import time
 import multiprocessing as mp
-
-import numpy as np
 from queue import Queue
-
 
 # read network file
 def read_network(filename):
@@ -65,37 +62,44 @@ def get_evl_arguments():
 def ic_process(graph, seeds, cam):  # independent cascade
     q = Queue()
     active = set()
+    exposed = set()
     for seed in seeds:
         q.put(seed)
         active.add(seed)
+        exposed.add(seed)
     while not q.empty():  # graph[u] = [(v, p1, p2) ...]
         u = q.get()
         for nei in graph[u]:  # u's adjacent nodes
             v = nei[0]
             p = nei[cam]  # p1 or p2
+            exposed.add(v)
             if v not in active:
                 prob = random.random()
                 if p >= prob:  # activate v
                     active.add(v)
                     q.put(v)
-    return active
+    return exposed
 
 
-def ic_2cam(graph, u1, u2, n):  # run ic for 2 campaigns
-    act1 = ic_process(graph, u1, 1)
-    act2 = ic_process(graph, u2, 2)
-    num = len(act1.union(act2)) - len(act1.intersection(act2))
+def ic_both(graph, u1, u2, n):  # run ic for 2 campaigns
+    exp1 = ic_process(graph, u1, 1)
+    exp2 = ic_process(graph, u2, 2)
+    num = len(exp1.union(exp2)) - len(exp1.intersection(exp2))
     return n - num
 
 
-def run(graph, u1, u2, n):
-    loop = 5000
+def run(graph, u1, u2, n, out):
+    loop = 200
+    # sum = 0
+    # for i in range(loop):
+    #     sum += ic_both(graph, u1, u2, n)
+    # ans = sum / loop
     cores = 4
     pool = mp.Pool(processes=cores)
     results = []
     start = time.time()
     for _ in range(loop):
-        res = pool.apply_async(ic_2cam, args=(graph, u1, u2, n))
+        res = pool.apply_async(ic_both, args=(graph, u1, u2, n))
         results.append(res)
 
     pool.close()
@@ -105,22 +109,26 @@ def run(graph, u1, u2, n):
     end = time.time()
     print("result: ", ans)
     print("time: ", end - start)
+    with open(out, 'w') as f:
+        f.write(str(ans))
 
 
 if __name__ == "__main__":
     args = get_evl_arguments()
-    network = args.network
+    network = args.network  # network file path
     initial = args.initial
     balanced = args.balanced
-    k = args.k
-    out = args.out
+    k = args.k  # budget
+    out = args.out  # output path
     graph, n = read_network(network)
     i1, i2 = read_seeds(initial)
     s1, s2 = read_seeds(balanced)
     u1 = i1.union(s1)
     u2 = i2.union(s2)
-    # for i in range(3):
-    run(graph, u1, u2, n)
+    print("U1", u1)
+    print("U2", u2)
+    print(graph[0][:6])
+    run(graph, u1, u2, n, out)
 
-    # case1: 322
-    # case2: 35985
+    # case1: 425
+    # case2: 35555-35561
