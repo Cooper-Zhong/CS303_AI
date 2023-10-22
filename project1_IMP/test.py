@@ -1,6 +1,10 @@
 import random
 import multiprocessing as mp
-tmp = ("a", "b", "c")
-print(tmp[0])
-print(random.uniform(0, 1))
-print(mp.cpu_count())
+
+nodes = {1, 2, 3, 4, 5, 6}
+test = {}
+
+test = nodes
+test = test & {1,2,3}
+print(test)
+print(nodes)

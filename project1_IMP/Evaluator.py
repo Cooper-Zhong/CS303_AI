@@ -1,8 +1,10 @@
 import argparse
+import copy
 import random
 import time
 import multiprocessing as mp
 from queue import Queue
+
 
 # read network file
 def read_network(filename):
@@ -61,12 +63,10 @@ def get_evl_arguments():
 # cam: campaign, 1 or 2, to get p1 or p2.
 def ic_process(graph, seeds, cam):  # independent cascade
     q = Queue()
-    active = set()
-    exposed = set()
+    active = copy.deepcopy(seeds)
+    exposed = copy.deepcopy(seeds)
     for seed in seeds:
         q.put(seed)
-        active.add(seed)
-        exposed.add(seed)
     while not q.empty():  # graph[u] = [(v, p1, p2) ...]
         u = q.get()
         for nei in graph[u]:  # u's adjacent nodes
@@ -88,31 +88,34 @@ def ic_both(graph, u1, u2, n):  # run ic for 2 campaigns
     return n - num
 
 
-def run(graph, u1, u2, n, out):
-    loop = 200
-    # sum = 0
-    # for i in range(loop):
-    #     sum += ic_both(graph, u1, u2, n)
-    # ans = sum / loop
-    cores = 4
-    pool = mp.Pool(processes=cores)
-    results = []
-    start = time.time()
-    for _ in range(loop):
-        res = pool.apply_async(ic_both, args=(graph, u1, u2, n))
-        results.append(res)
+def run(graph, u1, u2, n, loop):
+    start = time.perf_counter()
+    total = 0
+    for i in range(loop):
+        total += ic_both(graph, u1, u2, n)
 
-    pool.close()
-    pool.join()
-    total_return_val = sum(res.get() for res in results)
-    ans = total_return_val / loop
-    end = time.time()
-    print("result: ", ans)
-    print("time: ", end - start)
-    with open(out, 'w') as f:
-        f.write(str(ans))
+    end = time.perf_counter()
+    return total / loop, end - start
+
+    # cores = 4
+    # pool = mp.Pool(processes=cores)
+    # results = []
+    # start = time.perf_counter()
+    # for _ in range(loop):
+    #     res = pool.apply_async(ic_both, args=(graph, u1, u2, n))
+    #     results.append(res)
+    #
+    # pool.close()
+    # pool.join()
+    # total_return_val = sum(res.get() for res in results)
+    # ans = total_return_val / loop
+    # end = time.perf_counter()
+    # print("result: ", ans)
+    # print("time: ", end - start)
+    # return total / loop, end - start
 
 
+loop = 400
 if __name__ == "__main__":
     args = get_evl_arguments()
     network = args.network  # network file path
@@ -125,10 +128,11 @@ if __name__ == "__main__":
     s1, s2 = read_seeds(balanced)
     u1 = i1.union(s1)
     u2 = i2.union(s2)
-    print("U1", u1)
-    print("U2", u2)
-    print(graph[0][:6])
-    run(graph, u1, u2, n, out)
+    ans, cost = run(graph, u1, u2, n, loop)
+    print("result: ", ans)
+    print("time: ", cost)
+    with open(out, 'w') as f:
+        f.write(str(ans))
 
     # case1: 425
     # case2: 35555-35561
