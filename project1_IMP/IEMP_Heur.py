@@ -1,14 +1,11 @@
 import argparse
-import concurrent.futures
 import copy
-import multiprocessing.pool
 import random
 import time
 
 sample_num = 3  # loop time for evaluation
 n = 0
 k = 0
-# maxsize = 37000
 graph = []
 nei = []
 nodes = set()
@@ -16,7 +13,6 @@ i1 = set()
 i2 = set()
 s1 = set()
 s2 = set()
-
 
 
 def ic_process(seeds, cam, nei):  # independent cascade
@@ -42,16 +38,6 @@ def get_exposed(seeds, cam, sample_times):
     for i in range(sample_times):
         exposed = exposed & ic_process(seeds, cam, nei)
     return exposed
-
-
-
-def get_exposed_both(seeds1, seeds2, sample_times):
-    exposed1 = nodes
-    exposed2 = nodes
-    for i in range(sample_times):
-        exposed1 = exposed1 & ic_process(seeds1, 1, nei)
-        exposed2 = exposed2 & ic_process(seeds2, 2, nei)
-    return exposed1, exposed2
 
 
 def get_phi(exposed1, exposed2):
@@ -111,7 +97,6 @@ if __name__ == "__main__":
     k = args.budget
 
     nodes = set(range(n))  # all nodes
-
     # each single node's exposed set
     pre_exposed1 = [get_exposed({i}, 1, sample_num) for i in range(n)]
     pre_exposed2 = [get_exposed({i}, 2, sample_num) for i in range(n)]
@@ -152,7 +137,6 @@ if __name__ == "__main__":
 
     end = time.perf_counter()
     print("time: ", end - start)
-
     # write output
     with open(args.output, 'w') as f:
         f.write(str(len(s1)) + " " + str(len(s2)) + "\n")
