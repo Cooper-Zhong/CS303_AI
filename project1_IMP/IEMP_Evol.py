@@ -13,6 +13,8 @@ mutation_rate = 0.3
 graph = []
 nei = []
 nodes = set()
+pre_exposed1 = []
+pre_exposed2 = []
 i1 = set()
 i2 = set()
 s1 = set()
@@ -52,8 +54,9 @@ def get_phi(exposed1, exposed2):
 
 
 def uniform_crossover(parent1, parent2):
-    child = [parent1[i] if random.random() < 0.5 else parent2[i] for i in range(len(parent1))]
-    return child
+    child1 = [parent1[i] if random.random() < cross_rate else parent2[i] for i in range(len(parent1))]
+    child2 = [parent2[i] if random.random() < cross_rate else parent1[i] for i in range(len(parent1))]
+    return child1, child2
 
 
 def single_point_crossover(parent1, parent2):
@@ -81,8 +84,8 @@ def generate_offspring(population):
         # parent1 = roulette_wheel_selection(population)
         # parent2 = roulette_wheel_selection(population)
 
-        # child = uniform_crossover(parent1, parent2)
-        child1, child2 = single_point_crossover(parent1, parent2)
+        child1, child2 = uniform_crossover(parent1, parent2)
+        # child1, child2 = single_point_crossover(parent1, parent2)
 
         # Perform flip bit mutation
         child1 = flip_bit(child1)
@@ -141,7 +144,6 @@ def roulette_wheel_selection(population):
                 break
 
     return selected_population
-
 
 
 if __name__ == "__main__":
@@ -236,6 +238,7 @@ if __name__ == "__main__":
         # solution[i] = 1 means i is selected, first n nodes are cam1, last n nodes are cam2
         solution = [0 for _ in range(2 * n)]
         # randomly select 0-k nodes from top n/2 nodes
+
         selected_elements = random.sample(income[:n // 2], random.randint(0, k - 1))
         for i in range(len(selected_elements)):
             if selected_elements[i][0] == 0:  # cam1
@@ -263,6 +266,11 @@ if __name__ == "__main__":
     best = random.choice(population)
     best_fitness = get_fitness(best)
     for _ in range(evol_num):  # evolution loop
+        # update initial estimation with a low probability
+        if random.random() < 0.15:
+            exposed_init1 = get_exposed(i1, 1, sample_num)  # exposed set of i1
+            exposed_init2 = get_exposed(i2, 2, sample_num)  # exposed set of i2
+
         # Generate n new solutions by crossover and mutation
         offspring = generate_offspring(population)
 
@@ -275,10 +283,13 @@ if __name__ == "__main__":
 
         # Select the best n solutions from the population and the offspring
         candidates.sort(key=lambda x: x[1], reverse=True)
-        print(f"round {_ + 1}: ", candidates[0][1])  # print best fitness(phi)
-        if candidates[0][1] > best_fitness:
-            best = candidates[0][0]
-        population = [candidates[i][0] for i in range(pop_size)] # select the best n solutions
+
+        best = random.choices(candidates[:3], weights=[0.7, 0.2, 0.1], k=1)[0][0]
+        best_fitness = get_fitness(best)
+
+        print(f"round {_ + 1}: ", best_fitness)  # print best fitness(phi)
+
+        population = [candidates[i][0] for i in range(pop_size)]  # select the best n solutions
 
     # select the best solution
     s1, s2 = seq_to_set(best)
