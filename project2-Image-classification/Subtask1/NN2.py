@@ -138,45 +138,6 @@ class NeuralNetwork:
                 print(
                     f'Epoch {epoch + 1}: accuracy = {avg_accuracy}, val_accuracy = {val_accuracy}')
 
-        # --------------------------------------------------
-
-        # for epoch in range(self.num_iterations):
-        #     total_loss = 0
-        #     total_accuracy = 0
-
-        #     for i in tqdm(range(len(X_train)), desc=f'Epoch {epoch + 1}', position=0, leave=True):
-        #         X_sample = X_train[i:i+1]
-        #         y_sample = y_train[i:i+1]
-
-        #         # Forward pass
-        #         a1, a2 = self.forward_pass(X_sample)
-
-        #         # Compute loss and accuracy
-        #         loss = categorical_crossentropy(y_sample, a2)
-        #         accuracy_batch = accuracy(y_sample, np.argmax(a2, axis=1))
-
-        #         total_loss += loss
-        #         total_accuracy += accuracy_batch
-
-        #         # Backward pass
-        #         self.backward_pass(X_sample, y_sample, a1, a2)
-
-        #     # Average loss and accuracy for the epoch
-        #     avg_loss = total_loss / len(X_train)
-        #     avg_accuracy = total_accuracy / len(X_train)
-
-        #     loss_history.append(avg_loss)
-        #     accuracy_history.append(avg_accuracy)
-
-        #     # Validation
-        #     if X_val is not None and y_val is not None:
-        #         _, a2_val = self.forward_pass(X_val)
-        #         val_loss = categorical_crossentropy(y_val, a2_val)
-        #         val_accuracy = accuracy(y_val, np.argmax(a2_val, axis=1))
-
-        #         val_loss_history.append(val_loss)
-        #         val_accuracy_history.append(val_accuracy)
-
         return loss_history, val_loss_history, accuracy_history, val_accuracy_history
 
     def predict(self, X):

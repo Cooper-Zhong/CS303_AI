@@ -78,7 +78,7 @@ class newSoftmaxRegression:
 
                 # Update weights with learning rate schedule
                 # self.learning_rate = self.initial_learning_rate * np.exp(-iteration / 1000)
-                self.learning_rate *= decay_rate
+                self.learning_rate *=   
 
             # Calculate training accuracy
             train_pred = np.argmax(softmax_probs, axis=1)
